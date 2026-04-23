@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loan Calculator - Hitung Cicilan & Bunga Pinjaman</title>
+  <meta name="description" content="Kalkulator pinjaman gratis untuk menghitung cicilan bulanan, total bunga, dan total pembayaran. Mendukung bunga flat dan efektif/anuitas.">
+  <meta name="keywords" content="loan calculator, kalkulator pinjaman, hitung cicilan, bunga pinjaman, kalkulator kredit, mortgage calculator, cicilan bulanan">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="Loan Calculator - Hitung Cicilan & Bunga Pinjaman">
+  <meta property="og:description" content="Kalkulator pinjaman gratis untuk menghitung cicilan bulanan, total bunga, dan total pembayaran.">
+  <meta property="og:type" content="website">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#E8F9F0',
+              100: '#D1F3E1',
+              200: '#A3E7C3',
+              300: '#75DBA5',
+              400: '#47CF87',
+              500: '#00BC64',
+              600: '#009A51',
+              700: '#00783E',
+              800: '#00562C',
+              900: '#003419',
+            },
+            neutral: {
+              50: '#F9FAFB',
+              100: '#F3F4F6',
+              200: '#E5E7EB',
+              300: '#D1D5DB',
+              400: '#9CA3AF',
+              500: '#6B7280',
+              600: '#4B5563',
+              700: '#374151',
+              800: '#1F2937',
+              900: '#111827',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom range slider */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 9999px;
+      background: #E5E7EB;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #00BC64;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 188, 100, 0.4);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      box-shadow: 0 3px 10px rgba(0, 188, 100, 0.5);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #00BC64;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 6px rgba(0, 188, 100, 0.4);
+    }
+    /* Number animation */
+    .result-value {
+      transition: all 0.3s ease;
+    }
+    /* Toast */
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-up {
+      animation: fadeSlideUp 0.4s ease-out forwards;
+    }
+    /* Tab indicator */
+    .tab-active {
+      border-color: #00BC64;
+      background: #00BC64;
+      color: white;
+    }
+    .tab-inactive {
+      border-color: #E5E7EB;
+      background: white;
+      color: #4B5563;
+    }
+    .tab-inactive:hover {
+      border-color: #A3E7C3;
+    }
+    /* Print */
+    @media print {
+      .no-print { display: none !important; }
+    }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Loan Calculator",
+    "description": "Kalkulator pinjaman gratis untuk menghitung cicilan bulanan, total bunga, dan total pembayaran.",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Web Browser",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "IDR"
+    }
+  }
+  </script>
+</head>
+<body class="bg-neutral-100 text-neutral-800 font-sans antialiased min-h-screen">
+
+  <!-- TOOL: Loan Calculator — langsung tampil, tanpa landing page -->
+  <div class="max-w-5xl mx-auto px-4 py-6 sm:py-10">
+
+    <!-- Minimal Header -->
+    <div class="flex items-center gap-2 mb-6">
+      <div class="w-9 h-9 bg-primary-500 rounded-lg flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-neutral-900 leading-tight">Loan Calculator</h1>
+        <p class="text-xs text-neutral-500">Hitung cicilan, bunga & total pembayaran pinjaman</p>
+      </div>
+    </div>
+
+    <!-- Main Grid: Inputs + Results -->
+    <div class="grid lg:grid-cols-5 gap-5">
+
+      <!-- LEFT: Inputs -->
+      <div class="lg:col-span-3 bg-white rounded-2xl border border-neutral-200 p-5 sm:p-7">
+
+        <!-- Loan Type Toggle -->
+        <div class="flex gap-2 mb-6">
+          <button id="btnEffectiveRate" onclick="setLoanType('effective')"
+            class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all duration-200 tab-active">
+            Bunga Efektif (Anuitas)
+          </button>
+          <button id="btnFlatRate" onclick="setLoanType('flat')"
+            class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all duration-200 tab-inactive">
+            Bunga Flat
+          </button>
+        </div>
+        <p class="text-xs text-neutral-400 -mt-4 mb-6" id="loanTypeDesc">
+          Bunga dihitung dari saldo pinjaman tersisa. Cicilan awal lebih besar, makin lama makin kecil.
+        </p>
+
+        <!-- Loan Amount -->
+        <div class="mb-6">
+          <label for="loanAmountInput" class="text-sm font-semibold text-neutral-700 mb-2 block">Jumlah Pinjaman</label>
+          <div class="flex items-center bg-neutral-100 rounded-lg px-3 py-2.5 border border-neutral-200 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-500/20 transition-all">
+            <span class="text-neutral-400 text-sm mr-1">Rp</span>
+            <input type="text" id="loanAmountInput" value="500,000,000"
+              class="bg-transparent text-right text-sm font-semibold text-neutral-900 w-full focus:outline-none"
+              aria-label="Jumlah pinjaman" placeholder="Masukkan jumlah pinjaman">
+          </div>
+        </div>
+
+        <!-- Interest Rate -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-2">
+            <label for="interestRate" class="text-sm font-semibold text-neutral-700">Suku Bunga Tahunan</label>
+            <div class="flex items-center bg-neutral-100 rounded-lg px-3 py-1.5">
+              <input type="text" id="interestRateInput" value="8.5"
+                class="bg-transparent text-right text-sm font-semibold text-neutral-900 w-14 focus:outline-none"
+                aria-label="Suku bunga tahunan">
+              <span class="text-neutral-400 text-xs ml-1">%</span>
+            </div>
+          </div>
+          <input type="range" id="interestRate" min="0.5" max="30" step="0.1" value="8.5"
+            class="w-full" aria-label="Slider suku bunga">
+          <div class="flex justify-between text-[11px] text-neutral-400 mt-1">
+            <span>0.5%</span>
+            <span>30%</span>
+          </div>
+        </div>
+
+        <!-- Loan Term -->
+        <div class="mb-7">
+          <div class="flex items-center justify-between mb-2">
+            <label for="loanTerm" class="text-sm font-semibold text-neutral-700">Jangka Waktu</label>
+            <div class="flex items-center bg-neutral-100 rounded-lg px-3 py-1.5">
+              <input type="text" id="loanTermInput" value="20"
+                class="bg-transparent text-right text-sm font-semibold text-neutral-900 w-10 focus:outline-none"
+                aria-label="Jangka waktu">
+              <span class="text-neutral-400 text-xs ml-1">Thn</span>
+            </div>
+          </div>
+          <input type="range" id="loanTerm" min="1" max="30" step="1" value="20"
+            class="w-full" aria-label="Slider jangka waktu">
+          <div class="flex justify-between text-[11px] text-neutral-400 mt-1">
+            <span>1 Tahun</span>
+            <span>30 Tahun</span>
+          </div>
+        </div>
+
+        <!-- Calculate Button -->
+        <button onclick="calculateLoan()"
+          class="w-full bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white font-bold py-3.5 rounded-xl transition-colors shadow-lg shadow-primary-500/20 text-base focus:ring-4 focus:ring-primary-500/30 focus:outline-none no-print">
+          Hitung Sekarang
+        </button>
+      </div>
+
+      <!-- RIGHT: Results -->
+      <div class="lg:col-span-2 space-y-4">
+
+        <!-- Monthly Payment -->
+        <div class="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+          <p class="text-primary-100 text-xs font-medium mb-1">Cicilan Bulanan</p>
+          <p class="text-2xl sm:text-3xl font-extrabold result-value" id="monthlyPayment">Rp 4.336.134</p>
+          <div class="mt-3 flex items-center gap-1.5 text-primary-100 text-[11px]">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span id="loanTypeLabel">Anuitas / Efektif</span>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-white rounded-xl p-4 border border-neutral-200">
+            <p class="text-[11px] text-neutral-400 font-medium mb-0.5">Total Bunga</p>
+            <p class="text-base font-bold text-red-500 result-value" id="totalInterest">Rp 540.672.211</p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-neutral-200">
+            <p class="text-[11px] text-neutral-400 font-medium mb-0.5">Total Pembayaran</p>
+            <p class="text-base font-bold text-neutral-900 result-value" id="totalPayment">Rp 1.040.672.211</p>
+          </div>
+        </div>
+
+        <!-- Donut Chart (CSS conic-gradient — no canvas DPR bugs) -->
+        <div class="bg-white rounded-xl p-5 border border-neutral-200">
+          <p class="text-xs font-bold text-neutral-900 mb-3">Rincian Pembayaran</p>
+          <div class="flex items-center justify-center">
+            <div class="relative w-[180px] h-[180px]">
+              <!-- Outer ring: conic-gradient -->
+              <div id="chartRing" class="w-full h-full rounded-full" style="background: conic-gradient(#00BC64 0% 48%, #F87171 48% 100%);"></div>
+              <!-- Center donut hole -->
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-[88px] h-[88px] bg-white rounded-full flex flex-col items-center justify-center">
+                  <span class="text-lg font-bold text-neutral-900" id="chartPct">48%</span>
+                  <span class="text-[9px] text-neutral-400">Pokok</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-center gap-5 mt-3">
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-primary-500 inline-block"></span>
+              <span class="text-[11px] text-neutral-500">Pokok</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-red-400 inline-block"></span>
+              <span class="text-[11px] text-neutral-500">Bunga</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-2 no-print">
+          <button onclick="printResult()"
+            class="flex-1 flex items-center justify-center gap-1.5 bg-white border border-neutral-200 rounded-xl py-2.5 text-xs font-semibold text-neutral-600 hover:bg-neutral-50 transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            Cetak
+          </button>
+          <button onclick="copyLink()"
+            class="flex-1 flex items-center justify-center gap-1.5 bg-white border border-neutral-200 rounded-xl py-2.5 text-xs font-semibold text-neutral-600 hover:bg-neutral-50 transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+            Bagikan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Amortization Schedule -->
+    <div class="mt-5 bg-white rounded-2xl border border-neutral-200 overflow-hidden">
+      <div class="px-5 sm:px-7 py-4 border-b border-neutral-100 flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-neutral-900">Jadwal Amortisasi</h2>
+          <p class="text-[11px] text-neutral-400 mt-0.5">Rincian pembayaran per tahun</p>
+        </div>
+        <button onclick="toggleMonthlyView()" id="toggleViewBtn"
+          class="inline-flex items-center gap-1 text-xs font-semibold text-primary-500 hover:text-primary-600 transition-colors no-print">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+          <span id="toggleViewLabel">Detail Bulanan</span>
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[700px] text-sm">
+          <thead class="bg-neutral-50">
+            <tr>
+              <th class="text-left px-5 py-2.5 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Periode</th>
+              <th class="text-right px-5 py-2.5 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Cicilan/Bulan</th>
+              <th class="text-right px-5 py-2.5 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Pokok</th>
+              <th class="text-right px-5 py-2.5 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Bunga</th>
+              <th class="text-right px-5 py-2.5 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Sisa Pinjaman</th>
+            </tr>
+          </thead>
+          <tbody id="amortizationBody" class="divide-y divide-neutral-100">
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Minimal Footer -->
+    <p class="text-center text-[11px] text-neutral-400 mt-6">Hasil kalkulasi bersifat estimasi. Konsultasikan dengan lembaga keuangan untuk angka resmi.</p>
+  </div>
+
+  <script>
+    // =============================================
+    // STATE
+    // =============================================
+    let loanType = 'effective';
+    let showMonthly = false;
+    let amortizationData = [];
+
+    // =============================================
+    // FORMAT HELPERS
+    // =============================================
+    function formatRupiah(num) {
+      if (isNaN(num) || !isFinite(num)) return 'Rp 0';
+      return 'Rp ' + Math.round(num).toLocaleString('id-ID');
+    }
+
+    function formatNumber(num) {
+      if (isNaN(num) || !isFinite(num)) return '0';
+      return Math.round(num).toLocaleString('id-ID');
+    }
+
+    function parseFormattedNumber(str) {
+      return parseFloat(str.replace(/[^\d.-]/g, '')) || 0;
+    }
+
+    // =============================================
+    // SYNC SLIDER & INPUT
+    // =============================================
+    const loanAmountInput = document.getElementById('loanAmountInput');
+    // Format only on blur — avoids cursor jumping while typing
+    loanAmountInput.addEventListener('blur', () => {
+      let val = parseFormattedNumber(loanAmountInput.value);
+      val = Math.max(0, val); // no upper limit when typing manually
+      loanAmountInput.value = val > 0 ? formatNumber(val) : '';
+      calculateLoan();
+    });
+
+    const interestRateSlider = document.getElementById('interestRate');
+    const interestRateInput = document.getElementById('interestRateInput');
+    interestRateSlider.addEventListener('input', () => {
+      interestRateInput.value = parseFloat(interestRateSlider.value).toFixed(1);
+      autoCalculate();
+    });
+    // Format only on blur — avoids cursor jumping while typing
+    interestRateInput.addEventListener('blur', () => {
+      interestRateInput.value = parseFloat(parseFormattedNumber(interestRateInput.value)).toFixed(1);
+      let val = parseFormattedNumber(interestRateInput.value);
+      val = Math.max(0.5, Math.min(30, val));
+      interestRateSlider.value = val;
+      calculateLoan();
+    });
+
+    const loanTermSlider = document.getElementById('loanTerm');
+    const loanTermInput = document.getElementById('loanTermInput');
+    loanTermSlider.addEventListener('input', () => {
+      loanTermInput.value = loanTermSlider.value;
+      autoCalculate();
+    });
+    // Format only on blur — avoids cursor jumping while typing
+    loanTermInput.addEventListener('blur', () => {
+      loanTermInput.value = Math.round(parseFormattedNumber(loanTermInput.value));
+      let val = parseFormattedNumber(loanTermInput.value);
+      val = Math.max(1, Math.min(30, val));
+      loanTermSlider.value = val;
+      calculateLoan();
+    });
+
+    // =============================================
+    // LOAN TYPE TOGGLE
+    // =============================================
+    function setLoanType(type) {
+      loanType = type;
+      const btnFlat = document.getElementById('btnFlatRate');
+      const btnEffective = document.getElementById('btnEffectiveRate');
+      const desc = document.getElementById('loanTypeDesc');
+      const label = document.getElementById('loanTypeLabel');
+
+      if (type === 'flat') {
+        btnFlat.className = 'flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all duration-200 tab-active';
+        btnEffective.className = 'flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all duration-200 tab-inactive';
+        desc.textContent = 'Bunga dihitung dari plafon awal. Cicilan tetap dan sama setiap bulan. Cocok untuk KTA dan kredit motor.';
+        label.textContent = 'Flat Rate';
+      } else {
+        btnEffective.className = 'flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all duration-200 tab-active';
+        btnFlat.className = 'flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all duration-200 tab-inactive';
+        desc.textContent = 'Bunga dihitung dari saldo pinjaman tersisa. Cicilan awal lebih besar, makin lama makin kecil.';
+        label.textContent = 'Anuitas / Efektif';
+      }
+      calculateLoan();
+    }
+
+    // =============================================
+    // CALCULATION
+    // =============================================
+    function calculateLoan() {
+      const principal = parseFormattedNumber(loanAmountInput.value);
+      const annualRate = parseFormattedNumber(interestRateInput.value) / 100;
+      const years = parseFormattedNumber(loanTermInput.value);
+      const months = Math.round(years * 12);
+
+      if (!principal || !annualRate || !months) return;
+
+      let monthlyPayment, totalPayment, totalInterest;
+      amortizationData = [];
+
+      if (loanType === 'flat') {
+        totalInterest = principal * annualRate * years;
+        totalPayment = principal + totalInterest;
+        monthlyPayment = totalPayment / months;
+
+        const monthlyPrincipal = principal / months;
+        const monthlyInterest = totalInterest / months;
+        let remaining = principal;
+        for (let m = 1; m <= months; m++) {
+          remaining -= monthlyPrincipal;
+          amortizationData.push({
+            month: m,
+            payment: monthlyPayment,
+            principal: monthlyPrincipal,
+            interest: monthlyInterest,
+            remaining: Math.max(0, remaining)
+          });
+        }
+      } else {
+        const monthlyRate = annualRate / 12;
+        if (monthlyRate === 0) {
+          monthlyPayment = principal / months;
+        } else {
+          monthlyPayment = principal * (monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
+        }
+        totalPayment = monthlyPayment * months;
+
+        let remaining = principal;
+        let sumInterest = 0;
+        for (let m = 1; m <= months; m++) {
+          const interestPart = remaining * (annualRate / 12);
+          const principalPart = monthlyPayment - interestPart;
+          remaining -= principalPart;
+          sumInterest += interestPart;
+          amortizationData.push({
+            month: m,
+            payment: monthlyPayment,
+            principal: principalPart,
+            interest: interestPart,
+            remaining: Math.max(0, remaining)
+          });
+        }
+        totalInterest = sumInterest;
+      }
+
+      // Update UI
+      document.getElementById('monthlyPayment').textContent = formatRupiah(monthlyPayment);
+      document.getElementById('totalInterest').textContent = formatRupiah(totalInterest);
+      document.getElementById('totalPayment').textContent = formatRupiah(totalPayment);
+
+      updateChart(principal, totalInterest);
+      buildAmortizationTable();
+    }
+
+    // =============================================
+    // PIE CHART (CSS conic-gradient — no DPR bugs)
+    // =============================================
+    function updateChart(principal, interest) {
+      const total = principal + interest;
+      if (total <= 0) return;
+
+      const principalPct = (principal / total) * 100;
+      const ring = document.getElementById('chartRing');
+      const pctLabel = document.getElementById('chartPct');
+
+      // Update conic-gradient
+      ring.style.background = `conic-gradient(#00BC64 0% ${principalPct}%, #F87171 ${principalPct}% 100%)`;
+
+      // Update center text
+      pctLabel.textContent = Math.round(principalPct) + '%';
+    }
+
+    // =============================================
+    // AMORTIZATION TABLE
+    // =============================================
+    function buildAmortizationTable() {
+      const tbody = document.getElementById('amortizationBody');
+      tbody.innerHTML = '';
+
+      if (showMonthly) {
+        amortizationData.forEach(row => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-neutral-50 transition-colors';
+          tr.innerHTML = `
+            <td class="px-5 py-2.5 font-medium text-neutral-900 text-xs">Bulan ${row.month}</td>
+            <td class="px-5 py-2.5 text-right text-neutral-700 text-xs">${formatRupiah(row.payment)}</td>
+            <td class="px-5 py-2.5 text-right text-primary-600 font-medium text-xs">${formatRupiah(row.principal)}</td>
+            <td class="px-5 py-2.5 text-right text-red-500 text-xs">${formatRupiah(row.interest)}</td>
+            <td class="px-5 py-2.5 text-right text-neutral-700 text-xs">${formatRupiah(row.remaining)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } else {
+        const years = Math.ceil(amortizationData.length / 12);
+        for (let y = 1; y <= years; y++) {
+          const startIdx = (y - 1) * 12;
+          const endIdx = Math.min(y * 12, amortizationData.length);
+          let yearPrincipal = 0, yearInterest = 0, lastRemaining = 0, monthPayment = 0;
+          for (let i = startIdx; i < endIdx; i++) {
+            yearPrincipal += amortizationData[i].principal;
+            yearInterest += amortizationData[i].interest;
+            lastRemaining = amortizationData[i].remaining;
+            if (i === startIdx) monthPayment = amortizationData[i].payment;
+          }
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-neutral-50 transition-colors';
+          tr.innerHTML = `
+            <td class="px-5 py-2.5 font-medium text-neutral-900 text-xs">Tahun ${y}</td>
+            <td class="px-5 py-2.5 text-right text-neutral-700 text-xs">${formatRupiah(monthPayment)}</td>
+            <td class="px-5 py-2.5 text-right text-primary-600 font-medium text-xs">${formatRupiah(yearPrincipal)}</td>
+            <td class="px-5 py-2.5 text-right text-red-500 text-xs">${formatRupiah(yearInterest)}</td>
+            <td class="px-5 py-2.5 text-right text-neutral-700 text-xs">${formatRupiah(lastRemaining)}</td>
+          `;
+          tbody.appendChild(tr);
+        }
+      }
+    }
+
+    function toggleMonthlyView() {
+      showMonthly = !showMonthly;
+      document.getElementById('toggleViewLabel').textContent = showMonthly ? 'Ringkasan Tahunan' : 'Detail Bulanan';
+      buildAmortizationTable();
+    }
+
+    // =============================================
+    // AUTO CALCULATE (debounced)
+    // =============================================
+    let calcTimeout;
+    function autoCalculate() {
+      clearTimeout(calcTimeout);
+      calcTimeout = setTimeout(calculateLoan, 200);
+    }
+
+    // =============================================
+    // PRINT & SHARE
+    // =============================================
+    function printResult() { window.print(); }
+
+    function copyLink() {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(window.location.href).then(() => showToast('Link berhasil disalin!'));
+      } else {
+        showToast('Tidak bisa menyalin link di browser ini.');
+      }
+    }
+
+    function showToast(message) {
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-neutral-900 text-white px-5 py-2.5 rounded-xl shadow-2xl text-xs font-medium z-[100] animate-fade-up';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2500);
+    }
+
+    // =============================================
+    // RESIZE HANDLER — redraw on orientation / window resize
+    // =============================================
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        calculateLoan();
+      }, 150);
+    });
+
+    // =============================================
+    // INIT
+    // =============================================
+    setLoanType('effective');
+    calculateLoan();
+  </script>
+</body>
+</html>
